@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Enkripsi dan Dekripsi</title>
+    <!-- Pustaka CryptoJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+</head>
+
+<body>
+    <h1>Enkripsi dan Dekripsi</h1>
+    <form id="encryption-form">
+        <textarea id="input-text" placeholder="Masukkan teks di sini..." required></textarea>
+        <button type="submit">Enkripsi</button>
+    </form>
+
+    <form id="decryption-form">
+        <textarea id="encrypted-text" placeholder="Masukkan teks terenkripsi di sini..." required></textarea>
+        <button type="submit">Dekripsi</button>
+    </form>
+
+    <script>
+        // Panjang kunci dan IV
+        const keyLength = 32; // 256-bit
+        const ivLength = 16; // 128-bit
+
+        // Daftar karakter spesial dan simbol ASCII untuk disisipkan ke teks terenkripsi
+        const specialCharacters = [
+            '¶', '∆', '÷', '•', '√', 'π', '§', '£', '¢', '∞', '±', 'Ω', 'µ', '™', '©', '®', '¥', '†', '‡', '‰', '√', '∞'
+        ];
+
+        // Fungsi untuk membuat kunci dan IV secara acak
+        function generateKeyAndIv() {
+            const key = CryptoJS.lib.WordArray.random(keyLength);
+            const iv = CryptoJS.lib.WordArray.random(ivLength);
+            return { key, iv };
+        }
+
+        // Fungsi untuk menyisipkan karakter spesial dan simbol ASCII ke dalam teks terenkripsi
+        function injectSpecialCharacters(text) {
+            const numberOfCharacters = Math.floor(Math.random() * 15) + 1; // Tentukan jumlah karakter yang akan disisipkan
+
+            for (let i = 0; i < numberOfCharacters; i++) {
+                const randomIndex = Math.floor(Math.random() * specialCharacters.length);
+                const randomPosition = Math.floor(Math.random() * text.length);
+
+                // Sisipkan karakter spesial ke dalam teks
+                text = text.slice(0, randomPosition) + specialCharacters[randomIndex] + text.slice(randomPosition);
+            }
+
+            return text;
+        }
+
+        // Fungsi untuk enkripsi
+        function encrypt(text) {
+            const { key, iv } = generateKeyAndIv();
+            const encrypted = CryptoJS.AES.encrypt(text, key, { iv: iv });
+            let output = iv.toString() + key.toString() + encrypted.toString();
+
+            // Sisipkan karakter spesial dan simbol ASCII ke dalam teks terenkripsi
+            output = injectSpecialCharacters(output);
+
+            return output;
+        }
+
+        // Fungsi untuk dekripsi
+        function decrypt(text) {
+            // Buang karakter spesial dan simbol ASCII dari teks terenkripsi
+            const specialCharPattern = /[^\da-fA-F]/g;
+            text = text.replace(specialCharPattern, '');
+
+            // Ekstrak IV dan kunci dari teks terenkripsi
+            const ivString = text.slice(0, ivLength * 2);
+            const keyString = text.slice(ivLength * 2, (ivLength * 2) + (keyLength * 2));
+            const encryptedData = text.slice((ivLength * 2) + (keyLength * 2));
+
+            // Konversi IV dan kunci dari string ke WordArray
+            const iv = CryptoJS.enc.Hex.parse(ivString);
+            const key = CryptoJS.enc.Hex.parse(keyString);
+
+            // Dekripsi data
+            const decrypted = CryptoJS.AES.decrypt(encryptedData, key, { iv: iv });
+            return decrypted.toString(CryptoJS.enc.Utf8);
+        }
+
+        // Event listener untuk formulir enkripsi
+        document.getElementById('encryption-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const inputText = document.getElementById('input-text').value;
+            const encryptedText = encrypt(inputText);
+            alert('Teks terenkripsi: ' + encryptedText);
+        });
+
+        // Event listener untuk formulir dekripsi
+        document.getElementById('decryption-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const encryptedText = document.getElementById('encrypted-text').value;
+            const decryptedText = decrypt(encryptedText);
+            alert('Teks terdekripsi: ' + decryptedText);
+        });
+    </script>
+</body>
+
+</html>
